@@ -1,0 +1,12 @@
+OUT = out
+SRCD= src
+BIN = $(OUT)/tisp
+SRC = $(wildcard $(SRCD)/*.cpp)
+HEADERS = $(wildcard headers/*.hpp)
+
+FLAGS   = -Iheaders/
+
+all: $(BIN)
+
+$(BIN): $(SRC) $(HEADERS)
+	$(CXX) $(FLAGS) -o $(BIN) $(SRC)

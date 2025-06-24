@@ -1,0 +1,10 @@
+#pragma once
+
+namespace Tisp {
+    namespace Language {
+	enum class NodeKind  {
+	    Assignment,
+	    Function,
+	}
+    }
+}
