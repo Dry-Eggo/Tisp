@@ -1,7 +1,0 @@
-#include <lexer.hpp>
-
-namespace Tisp {
-    namespace Language {
-	
-    }
-}
