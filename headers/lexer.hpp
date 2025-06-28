@@ -2,22 +2,31 @@
 
 #include <string>
 #include <vector>
+#include <string.h>
 
 namespace Tisp {
     namespace Language {
 	enum class TokenKind {
 	    NAME,
+	    KEYWORD,
+	    NUMBER,
+	    STRING,
 	    EQ,
 	    OPEN_PAREN,
 	    CLOSE_PAREN,
-	    END,
+	    COMMA,
+	    COLON,
+	    SEMI,
+	    DOT,
+	    TEOF,
 	};
 	struct Span {
-	    std::string filename;
+	    const char* filename;
 	    int         line;
 	    int         cols;
 	    int         cole;
-	    Span(std::string f, int l, int sc, int ec) : filename(f), line(l), cols(sc), cole(ec) {}
+	    Span(const char* f, int l, int sc, int ec) : filename(strdup(f)), line(l), cols(sc), cole(ec) {}
+	    Span() {}
 	};
 	struct Token {
 	    TokenKind   kind;
