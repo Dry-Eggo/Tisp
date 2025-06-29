@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <string.h>
+#include <error.hpp>
 
 namespace Tisp {
     namespace Language {
@@ -11,6 +12,7 @@ namespace Tisp {
 	    KEYWORD,
 	    NUMBER,
 	    STRING,
+	    // punctuations
 	    EQ,
 	    OPEN_PAREN,
 	    CLOSE_PAREN,
@@ -18,26 +20,39 @@ namespace Tisp {
 	    COLON,
 	    SEMI,
 	    DOT,
+	    // operators
+	    ADD,      // +
+	    SUB,      // -
+	    MUL,      // *
+	    DIV,      // /
+	    SHR,      // >>
+	    SHL,      // <<
+	    ADDEQ,    // +=
+	    SUBEQ,    // -=
+	    MULEQ,    // *=
+	    DIVEQ,    // /=
+	    INC,      // ++
+	    DEC,      // --
+	    OR,       // ||
+	    AND,      // &&
+	    BAND,     // &
+	    BOR,      // |
 	    TEOF,
 	};
-	struct Span {
-	    const char* filename;
-	    int         line;
-	    int         cols;
-	    int         cole;
-	    Span(const char* f, int l, int sc, int ec) : filename(strdup(f)), line(l), cols(sc), cole(ec) {}
-	    Span() {}
-	};
+	
 	struct Token {
 	    TokenKind   kind;
 	    std::string data;
 	    Span        span;
 	    Token(TokenKind k, std::string lexme, Span s): kind(k), data(lexme), span(s) {}
 	};
+	
 	typedef std::vector<Token> Tokens;
+	
 	struct Lexer {
 	    std::string filename;
 	    std::string source;
+	    ErrorManager*  error_manager;
 	    
 	    int         pos    = 0;
 	    int         column = 1;

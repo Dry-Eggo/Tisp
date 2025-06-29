@@ -5,126 +5,162 @@
 #include <memory>
 #include <vector>
 namespace Tisp {
-namespace Language {
-enum class StmtKind {
-  Assignment,
-  Function,
-  Program,
-  Body,
-  Expr,
-  Nop,
-};
-enum class ExprKind {
-  Int,
-  String,
-  Call,
-  Ident,
-  Nop,
-};
-struct Node;
-struct NodeExpr;
-struct NodeStmt;
-struct NodeAssignment;
-struct NodeFunction;
-struct NodeCall;
-struct NodeBody;
-struct NodeExprStmt;
-struct NodeInt;
-struct NodeString;
-struct NodeIdent;
+    namespace Language {
+	enum class StmtKind {
+	    Assignment,
+	    Function,
+	    Program,
+	    Body,
+	    Expr,
+	    Nop,
+	};
+	enum class ExprKind {
+	    Int,
+	    String,
+	    Call,
+	    Ident,
+	    Nop,
+	};
+	struct Node;
+	struct NodeExpr;
+	struct NodeStmt;
+	struct NodeAssignment;
+	struct NodeFunction;
+	struct NodeCall;
+	struct NodeBody;
+	struct NodeExprStmt;
+	struct NodeInt;
+	struct NodeString;
+	struct NodeIdent;
 
-using Exprptr = std::unique_ptr<NodeExpr>;
-using Stmtptr = std::unique_ptr<NodeStmt>;
+	using Exprptr = std::unique_ptr<NodeExpr>;
+	using Stmtptr = std::unique_ptr<NodeStmt>;
 
-struct NodeExpr {
-  Span span;
-  virtual ~NodeExpr() = default;
-};
+	struct NodeExpr {
+	    Span span;
+	    NodeExpr(Span s): span(s) {}
+	    virtual ~NodeExpr() = default;
+	};
+	
+	struct NodeAssignment {
+	    Span                     span;
+	    const char *             name;
+	    Exprptr                  expr;
+	    NodeAssignment(const char *name, Exprptr expr, Span s)
+	    : name(std::move(name)), expr(std::move(expr)), span(s) {}
+	};
 
-struct NodeAssignment {
-  const char *name;
-  Exprptr expr;
-  NodeAssignment(const char *name, Exprptr expr)
-      : name(std::move(name)), expr(std::move(expr)) {}
-};
+	struct NodeIdent : NodeExpr {
+	    Span                     span;
+	    const char *             identifier;
+	    NodeIdent(const char *name, Span s) : identifier(name), span(s), NodeExpr(s) {}
+	};
 
-struct NodeIdent : NodeExpr {
-  const char *identifier;
-  NodeIdent(const char *name) : identifier(name) {}
-};
+	struct NodeInt : NodeExpr {
+	    Span                     span;
+	    int64_t                  value;
+	    NodeInt(int64_t value, Span s) : value(value), span(s), NodeExpr(s) {}
+	};
 
-struct NodeInt : NodeExpr {
-  int64_t value;
-  NodeInt(int64_t value) : value(value) {}
-};
+	struct NodeString : NodeExpr {
+	    Span                      span;
+	    const char *              value;
+	    NodeString(const char *name, Span s) : value(name), span(s), NodeExpr(s) {}
+	};
 
-struct NodeString : NodeExpr {
-  const char *value;
-  NodeString(const char *name) : value(name) {}
-};
+	struct NodeFunction {
+	    Span                      span;
+	    const char *              name;
+	    std::unique_ptr<NodeBody> body;
+	    NodeFunction(const char *name, std::unique_ptr<NodeBody> body, Span s)
+	    : name(std::move(name)), body(std::move(body)), span(s) {}
+	};
 
-struct NodeFunction {
-  const char *name;
-  std::unique_ptr<NodeBody> body;
-  NodeFunction(const char *name, std::unique_ptr<NodeBody> body)
-      : name(std::move(name)), body(std::move(body)) {}
-};
+	struct NodeExprStmt {
+	    Exprptr expr;
+	    explicit NodeExprStmt(Exprptr expr) : expr(std::move(expr)) {}
+	};
 
-struct NodeExprStmt {
-  Exprptr expr;
-  explicit NodeExprStmt(Exprptr expr) : expr(std::move(expr)) {}
-};
+	struct NodeBody {
+	    Span                 span;
+	    std::vector<Stmtptr> stmts;
+	};
 
-struct NodeBody {
-  std::vector<Stmtptr> stmts;
-};
+	struct NodeNop {};
+	struct NodeCall: NodeExpr {
+	    Span                 span;
+	    Exprptr              callee;
+	    std::vector<Exprptr> args;
+	    NodeCall(Exprptr callee, std::vector<Exprptr> args, Span s)
+	    : callee(std::move(callee)), args(std::move(args)), span(s), NodeExpr(s) {}
+	};
+	enum class BinaryOp {
+	    Add,
+	    Sub,
+	    Mul,
+	    Div,
+	    Mod,
+	    Shl,
+	    Shr,
+	    And,
+	    Or,
+	    Band,
+	    Bor,
+	};
+	struct NodeBin: NodeExpr {
+	    Span       span;
+	    BinaryOp   op;
+	    Exprptr    lhs;
+	    Exprptr    rhs;
+	    NodeBin(BinaryOp op, Exprptr l, Exprptr r, Span s): op(op), lhs(std::move(l)), rhs(std::move(r)), span(s), NodeExpr(s) {}
+	};
+	
+	struct NodeStmt {
+	    StmtKind kind;
+	    Span span;
+	    using StmtVariant =
+	    std::variant<std::unique_ptr<NodeAssignment>,
+            std::unique_ptr<NodeExprStmt>, std::unique_ptr<NodeFunction>,
+            std::unique_ptr<NodeBody>, std::unique_ptr<NodeCall>,
+            std::unique_ptr<NodeNop>>;
+	    StmtVariant stmt;
+	    NodeStmt() : kind(StmtKind::Nop), stmt(std::make_unique<NodeNop>()) {}
+	    NodeStmt(Span span, StmtKind kind, StmtVariant stmt)
+	    : kind(kind), span(span), stmt(std::move(stmt)) {}
+	    static Stmtptr make_nop(Span s = {}) {
+		return std::make_unique<NodeStmt>(s, StmtKind::Nop,
+                std::make_unique<NodeNop>());
+	    }
+	};
 
-struct NodeNop {};
-struct NodeCall: NodeExpr {
-  Exprptr callee;
-  std::vector<Exprptr> args;
-  NodeCall(Exprptr callee, std::vector<Exprptr> args)
-      : callee(std::move(callee)), args(std::move(args)) {}
-};
-struct NodeStmt {
-  StmtKind kind;
-  Span span;
-  using StmtVariant =
-      std::variant<std::unique_ptr<NodeAssignment>,
-                   std::unique_ptr<NodeExprStmt>, std::unique_ptr<NodeFunction>,
-                   std::unique_ptr<NodeBody>, std::unique_ptr<NodeCall>,
-                   std::unique_ptr<NodeNop>>;
-  StmtVariant stmt;
-  NodeStmt() : kind(StmtKind::Nop), stmt(std::make_unique<NodeNop>()) {}
-  NodeStmt(Span span, StmtKind kind, StmtVariant stmt)
-      : kind(kind), span(span), stmt(std::move(stmt)) {}
-  static Stmtptr make_nop(Span s = {}) {
-    return std::make_unique<NodeStmt>(s, StmtKind::Nop,
-                                      std::make_unique<NodeNop>());
-  }
-};
+	struct Node {
+	    Span span;
+	    Stmtptr stmt;
+	};
 
-struct Node {
-  Span span;
-  Stmtptr stmt;
-};
-
-// Parser
-struct Parser {
-  Tokens source;
-  int pos;
-  Token now();
-  Token before();
-  Token peek();
-  void advance();
-  Node parse();
-  std::unique_ptr<NodeExpr> parse_expr();
-  Node parse_func();
-  std::unique_ptr<NodeBody> parse_body();
-  void expect(TokenKind k);
-  void expect_kw(const char *);
-  bool match(TokenKind k);
-  Parser(Tokens source) : source(source), pos(0) {}
-};
-} // namespace Language
+	// Parser
+	struct Parser {
+	    Tokens        source;
+	    ErrorManager* error_manager;
+	    int           pos;
+	    Token now();
+	    Token before();
+	    Token peek();
+	    void advance();
+	    Node parse();
+	    Exprptr parse_expr();
+	    Exprptr parse_term();
+	    Exprptr parse_additive();
+	    Exprptr parse_atom();
+	    Exprptr parse_logical_or();
+	    Exprptr parse_logical_and();
+	    
+	    Node parse_func();
+	    std::unique_ptr<NodeBody> parse_body();
+	    void expect(TokenKind k);
+	    void expect_kw(const char *);
+	    bool match(TokenKind k);
+	    Parser(Tokens source, ErrorManager* em) : source(source), pos(0), error_manager(em) {}
+	};
+    } // namespace Language
 } // namespace Tisp
