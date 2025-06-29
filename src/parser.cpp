@@ -57,9 +57,9 @@ namespace Tisp {
 			body->stmts.push_back(std::move(stmt));
 		    } else {
 			auto expr = parse_expr();
-			auto exprs = std::make_unique<NodeExprStmt>(std::move(expr));
+			auto exprs = new NodeExprStmt(std::move(expr));
 			auto stmt = std::make_unique<NodeStmt>(now().span, StmtKind::Expr,
-			std::move(exprs.get()));
+			exprs);
 			body->stmts.push_back(std::move(stmt));
 		    }
 		} break;

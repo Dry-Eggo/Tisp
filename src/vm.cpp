@@ -60,27 +60,27 @@ ValuePtr Vm::generate_value(NodeExpr* expr) {
 	assert(lhs->kind == Value::ValueKind::Number && rhs->kind == Value::ValueKind::Number);
 	switch (nbin->op) {
 	case BinaryOp::Add:
-	    return std::make_unique<Value::Value>(Value::Value(ValueKind::Number,
+	    return std::make_shared<Value::Value>(Value::Value(ValueKind::Number,
 	    std::get<int64_t>(lhs->data) + std::get<int64_t>(rhs->data)
 	    ));
 	case BinaryOp::Sub:
-	    return std::make_unique<Value::Value>(Value::Value(ValueKind::Number,
+	    return std::make_shared<Value::Value>(Value::Value(ValueKind::Number,
 	    std::get<int64_t>(lhs->data) - std::get<int64_t>(rhs->data)
 	    ));
 	case BinaryOp::Mul:
-	    return std::make_unique<Value::Value>(Value::Value(ValueKind::Number,
+	    return std::make_shared<Value::Value>(Value::Value(ValueKind::Number,
 	    std::get<int64_t>(lhs->data) * std::get<int64_t>(rhs->data)
 	    ));
 	case BinaryOp::Div:
-	    return std::make_unique<Value::Value>(Value::Value(ValueKind::Number,
+	    return std::make_shared<Value::Value>(Value::Value(ValueKind::Number,
 	    std::get<int64_t>(lhs->data) / std::get<int64_t>(rhs->data)
 	    ));
 	case BinaryOp::Or:
-	    return std::make_unique<Value::Value>(Value::Value(ValueKind::Number,
+	    return std::make_shared<Value::Value>(Value::Value(ValueKind::Number,
 	    std::get<int64_t>(lhs->data) || std::get<int64_t>(rhs->data)
 	    ));
 	case BinaryOp::And:
-	    return std::make_unique<Value::Value>(Value::Value(ValueKind::Number,
+	    return std::make_shared<Value::Value>(Value::Value(ValueKind::Number,
 	    std::get<int64_t>(lhs->data) && std::get<int64_t>(rhs->data)
 	    ));
 	}
@@ -124,14 +124,14 @@ ValuePtr Vm::handle_call(NodeCall *call) {
     if (auto nid = dynamic_cast<NodeIdent *>(call->callee.get())) {
 	if (this->builtins.count(nid->identifier)) {
 	    return this->builtins[nid->identifier](this,
-	    to_values(std::move(call->args)));
+	    to_values(call->args));
 	}
     }
     assert(0 && "Todo: add error value");
     exit(1);
 }
 
-Args Vm::to_values(std::vector<Exprptr> args) {
+Args Vm::to_values(std::vector<Exprptr> &args) {
     std::vector<ValuePtr> a;
     for (auto &arg : args) {
 	a.push_back(generate_value(arg.get()));

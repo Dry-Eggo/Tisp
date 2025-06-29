@@ -25,7 +25,7 @@ namespace Tisp {
 	    void execute_node(NodeStmt* node);
 	    Value::ValuePtr generate_value(NodeExpr* expr);
 	    Value::ValuePtr handle_call(NodeCall *call);
-	    Value::Args to_values(std::vector<Exprptr> args);
+	    Value::Args to_values(std::vector<Exprptr> &args);
 	};
     } // namespace Runtime
 } // namespace Tisp
