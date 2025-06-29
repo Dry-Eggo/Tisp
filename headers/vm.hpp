@@ -10,7 +10,16 @@ using namespace Tisp::Language;
 namespace Tisp {
     namespace Runtime {	
 	struct Env {
+	    using namespace::Value;
 	    std::unordered_map<std::string, std::shared_ptr<Value::Value>> variables;
+	    void set(std::string name, ValuePtr value) {
+		variables[name] = value;
+	    }
+	    ValuePtr get(std::string name) {
+		if (variables.count(name) == 0) {
+		    return Value::make_error("Variable Not Declared");
+		}
+	    }
 	};
 	
 	struct Vm {
