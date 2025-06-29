@@ -67,7 +67,18 @@ namespace Tisp {
 	    const char *              value;
 	    NodeString(const char *name, Span s) : value(name), span(s), NodeExpr(s) {}
 	};
+	struct NodeIf     : NodeExpr {
+	    Span                      span;
+	    Exprptr                   condition;
+	    std::unique_ptr<NodeBody> then_body;
+	    std::unique_ptr<NodeBody> else_body;
+	    NodeIf(Exprptr cond, std::unique_ptr<NodeBody> tb, std::unique_ptr<NodeBody> eb, Span s)
+	    : condition(std::move(cond)), then_body(std::move(tb)), else_body(std::move(eb)), span(s), NodeExpr(s) {}
 
+	    NodeIf(Exprptr cond, std::unique_ptr<NodeBody> tb, Span s)
+	    : condition(std::move(cond)), then_body(std::move(tb)), span(s), NodeExpr(s) {}
+	};
+	
 	struct NodeFunction {
 	    Span                      span;
 	    const char *              name;
@@ -86,7 +97,9 @@ namespace Tisp {
 	    std::vector<Stmtptr> stmts;
 	};
 
-	struct NodeNop {};
+	struct NodeNop: NodeExpr {
+	    NodeNop(): NodeExpr({}) {}
+	};
 	struct NodeCall: NodeExpr {
 	    Span                 span;
 	    Exprptr              callee;

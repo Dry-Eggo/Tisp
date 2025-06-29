@@ -14,6 +14,7 @@ namespace Tisp {
 	    String,
 	    Object,
 	    NativeFn,
+	    Error,
 	};
 
 	struct Value;
@@ -31,6 +32,50 @@ namespace Tisp {
 	    static ValuePtr obj_from_Value(const char *name, ValuePtr value) {
 		return std::make_shared<Value>(
 		Value(ValueKind::Object, std::pair(name, std::move(value))));
+	    }
+	    
+	    static ValuePtr make_error(std::string error_message) {
+		return std::make_shared<Value>(ValueKind::Error, std::move(error_message));
+	    }
+	    
+	    static ValuePtr make_string(std::string value) {
+		return std::make_shared<Value>(ValueKind::String, std::move(value));
+	    }
+	    
+	    static ValuePtr make_int(int64_t number) {
+		return std::make_shared<Value>(ValueKind::Number, number);
+	    }
+
+	    bool is_truthy() {
+		if (kind == ValueKind::Number) {
+		    return (std::get<int64_t>(data) > 0);
+		}
+		return false;
+	    }
+	    
+	    bool is_falsy() {
+		if (kind == ValueKind::Number) {
+		    return (std::get<int64_t>(data) < 0);
+		}
+		return false;
+	    } 
+	    
+	    std::string to_string() {
+		std::string repr;
+		if (kind == ValueKind::String) {
+		    
+		    repr = std::get<std::string>(data);
+		    
+		} else if (kind == ValueKind::Number) {
+
+		    repr = std::to_string(std::get<int64_t>(data));
+		    
+		} else if (kind == ValueKind::Object) {
+
+		    repr = std::get<std::pair<const char*, ValuePtr>>(data).second->to_string();
+		    
+		}
+		return repr;
 	    }
 	};
     } // namespace Value

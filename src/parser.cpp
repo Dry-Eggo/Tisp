@@ -38,7 +38,7 @@ namespace Tisp {
 		case Tisp::Language::TokenKind::KEYWORD: {
 		    if (now().data == "func") {
 			Node func_stmt = parse_func();
-		    }
+		    } else
 		    if (now().data == "let") {
 			advance();
 			auto span = now().span;
@@ -55,7 +55,15 @@ namespace Tisp {
 			    printf("Stmt if null\n");
 			}
 			body->stmts.push_back(std::move(stmt));
-		    } else {
+		    } else
+		    if (now().data == "if") {
+			auto expr = parse_expr();
+			auto exprs = std::make_unique<NodeExprStmt>(std::move(expr));
+			auto stmt = std::make_unique<NodeStmt>(now().span, StmtKind::Expr,
+			std::move(exprs));
+			body->stmts.push_back(std::move(stmt));
+		    }
+		    else {
 			std::cout << "Invalid Top-level item: '" << now().data << "' \n";
 			exit(1);
 		    }
@@ -97,12 +105,42 @@ namespace Tisp {
     std::unique_ptr<NodeBody> Parser::parse_body() {
 	std::unique_ptr<NodeBody> b = std::make_unique<NodeBody>();
     // TODO:
-	while (now().kind != TokenKind::KEYWORD && now().data == "end") {
+	while (!(now().kind == TokenKind::KEYWORD && now().data == "end" || now().data == "else")) {
 	    switch (now().kind) {
+	    case Tisp::Language::TokenKind::KEYWORD: {
+		if (now().data == "func") {
+		    Node func_stmt = parse_func();
+		} else
+		if (now().data == "let") {
+		    advance();
+		    auto span = now().span;
+		    const char *name = strdup(now().data.c_str());
+		    advance();
+		    expect(TokenKind::EQ);
+		    auto expr = parse_expr();
+		    expect(TokenKind::SEMI);
+		    std::unique_ptr<NodeStmt> stmt = std::make_unique<NodeStmt>(
+		    span, StmtKind::Assignment,
+		    std::make_unique<NodeAssignment>(
+		    NodeAssignment(name, std::move(expr), span)));
+		    if (!stmt) {
+			printf("Stmt if null\n");
+		    }
+		    b->stmts.push_back(std::move(stmt));
+		} else {
+		    std::stringstream s;
+		    s << "Invalid Statememt: '" << now().data << "' \n";
+		    error_manager->report(Diagnostic(DiagnosticType::Error, now().span, s.str(), ""), true);		    
+		    exit(1);
+		}
+	    } break;
 	    default: {
-		std::unique_ptr<NodeStmt> stmt = std::make_unique<NodeStmt>();
+		auto expr = parse_expr();
 		expect(TokenKind::SEMI);
-		stmt->kind = StmtKind::Expr;
+		auto exprs = std::make_unique<NodeExprStmt>(std::move(expr));
+		auto stmt = std::make_unique<NodeStmt>(now().span, StmtKind::Expr,
+                std::move(exprs));
+		b->stmts.push_back(std::move(stmt));
 	    } break;
 	}
     }
@@ -167,6 +205,27 @@ Exprptr Parser::parse_term() {
 
 std::unique_ptr<NodeExpr> Parser::parse_atom() {
     switch (now().kind) {
+    case TokenKind::KEYWORD: {
+	if (now().data == "if") {
+	    Span if_start    = now().span;
+	    advance();
+	    Exprptr condition = parse_logical_or();
+	    expect(TokenKind::COLON);
+	    std::unique_ptr<NodeBody> then_body = parse_body();
+	    if (now().data == "end") {
+		expect_kw("end");
+		return std::make_unique<NodeIf>(std::move(condition), std::move(then_body), if_start);
+	    } else if (now().data == "else") {
+		expect_kw("else");
+		expect(TokenKind::COLON);
+		std::unique_ptr<NodeBody> else_body = parse_body();
+		expect_kw("end");
+		return std::make_unique<NodeIf>(std::move(condition), std::move(then_body), std::move(else_body), if_start);
+	    }
+	}
+	error_manager->add(Diagnostic(DiagnosticType::Error, now().span, "Invalid Expression", ""));
+	return std::make_unique<NodeNop>();
+    } break;
     case TokenKind::NAME: {
 	const char *name = strdup(now().data.c_str());
 	Span        span = now().span;
@@ -202,12 +261,12 @@ std::unique_ptr<NodeExpr> Parser::parse_atom() {
 	advance();
 	return std::make_unique<NodeString>(s, span);
     } break;
-default:
-    std::stringstream s;
-    s << "Invalid Expr\n";
-    error_manager->report(Diagnostic(DiagnosticType::Error, now().span, s.str(), ""), true);
-    exit(1);
-}
+    default:
+	std::stringstream s;
+	s << "Invalid Expr\n";
+	error_manager->report(Diagnostic(DiagnosticType::Error, now().span, s.str(), ""), true);
+	exit(1);
+    }
 }
 void Parser::expect(TokenKind k) {
     if (!match(k)) {
@@ -222,6 +281,7 @@ bool Parser::match(TokenKind k) { return (now().kind == k); }
 void Parser::expect_kw(const char *w) {
     if (match(TokenKind::KEYWORD) && now().data == w) {
 	advance();
+	return;
     }
     std::stringstream s;
     s << "Expected: '" << w << "'\n";

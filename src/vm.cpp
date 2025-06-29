@@ -92,6 +92,19 @@ ValuePtr Vm::generate_value(std::unique_ptr<NodeExpr> expr) {
     if (auto ncall = dynamic_cast<NodeCall *>(expr.get())) {
 	return handle_call(ncall);
     }
+    if (auto nif = dynamic_cast<NodeIf *>(expr.get())) {
+	ValuePtr cond = generate_value(std::move(nif->condition));
+	if (cond->is_truthy()) {
+	    for(auto &node: nif->then_body->stmts) {
+		execute_node(std::move(node));
+	    }
+	} else if (nif->else_body) {
+	    for(auto &node: nif->else_body->stmts) {
+		execute_node(std::move(node));
+	    }
+	}
+	return cond;
+    }
     error_manager->report(Diagnostic(DiagnosticType::Error, expr->span, "Todo: Add Error Value Type", ""), true);
     exit(1);
 }
