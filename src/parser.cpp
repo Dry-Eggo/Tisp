@@ -31,7 +31,7 @@ namespace Tisp {
 	}
 	void Parser::advance() { pos++; }
 	Node Parser::parse() {
-	    std::unique_ptr<NodeBody> body = std::make_unique<NodeBody>();
+	    NodeBody* body = new NodeBody();
 	    Node program;
 	    while (now().kind != TokenKind::TEOF) {
 		switch (now().kind) {
@@ -49,37 +49,29 @@ namespace Tisp {
 			expect(TokenKind::SEMI);
 			std::unique_ptr<NodeStmt> stmt = std::make_unique<NodeStmt>(
 			span, StmtKind::Assignment,
-			std::make_unique<NodeAssignment>(
+			new NodeAssignment(
 			NodeAssignment(name, std::move(expr), span)));
 			if (!stmt) {
 			    printf("Stmt if null\n");
 			}
 			body->stmts.push_back(std::move(stmt));
-		    } else
-		    if (now().data == "if") {
+		    } else {
 			auto expr = parse_expr();
 			auto exprs = std::make_unique<NodeExprStmt>(std::move(expr));
 			auto stmt = std::make_unique<NodeStmt>(now().span, StmtKind::Expr,
-			std::move(exprs));
+			std::move(exprs.get()));
 			body->stmts.push_back(std::move(stmt));
-		    }
-		    else {
-			std::cout << "Invalid Top-level item: '" << now().data << "' \n";
-			exit(1);
 		    }
 		} break;
 	    default:
 		auto expr = parse_expr();
 		expect(TokenKind::SEMI);
-		auto exprs = std::make_unique<NodeExprStmt>(std::move(expr));
-		auto stmt = std::make_unique<NodeStmt>(now().span, StmtKind::Expr,
-                std::move(exprs));
-		body->stmts.push_back(std::move(stmt));
+		auto exprs = new NodeExprStmt(std::move(expr));
+		body->stmts.push_back(std::make_unique<NodeStmt>(now().span, StmtKind::Expr, exprs));
 		break;
 	    }
 	}
-	program.stmt =
-	std::make_unique<NodeStmt>(now().span, StmtKind::Body, std::move(body));
+	program.stmt = std::make_unique<NodeStmt>(now().span, StmtKind::Body, body);
 	return program;
     }
 
@@ -98,7 +90,7 @@ namespace Tisp {
 	expect(TokenKind::COLON);
 	fn->body = parse_body();
 	n.stmt = std::make_unique<NodeStmt>();
-	n.stmt->stmt = std::move(fn);
+	n.stmt->stmt = fn.get();
 	return n;
     }
 
@@ -119,12 +111,9 @@ namespace Tisp {
 		    expect(TokenKind::EQ);
 		    auto expr = parse_expr();
 		    expect(TokenKind::SEMI);
-		    std::unique_ptr<NodeStmt> stmt = std::make_unique<NodeStmt>(
-		    span, StmtKind::Assignment,
-		    std::make_unique<NodeAssignment>(
-		    NodeAssignment(name, std::move(expr), span)));
+		    std::unique_ptr<NodeStmt> stmt = std::make_unique<NodeStmt>(span, StmtKind::Assignment, new NodeAssignment(name, std::move(expr), span));
 		    if (!stmt) {
-			printf("Stmt if null\n");
+			printf("Stmt is null\n");
 		    }
 		    b->stmts.push_back(std::move(stmt));
 		} else {
@@ -137,9 +126,8 @@ namespace Tisp {
 	    default: {
 		auto expr = parse_expr();
 		expect(TokenKind::SEMI);
-		auto exprs = std::make_unique<NodeExprStmt>(std::move(expr));
-		auto stmt = std::make_unique<NodeStmt>(now().span, StmtKind::Expr,
-                std::move(exprs));
+		auto exprs = new NodeExprStmt(std::move(expr));
+		auto stmt = std::make_unique<NodeStmt>(now().span, StmtKind::Expr, exprs);
 		b->stmts.push_back(std::move(stmt));
 	    } break;
 	}
@@ -209,7 +197,7 @@ std::unique_ptr<NodeExpr> Parser::parse_atom() {
 	if (now().data == "if") {
 	    Span if_start    = now().span;
 	    advance();
-	    Exprptr condition = parse_logical_or();
+	    Exprptr condition = parse_expr();
 	    expect(TokenKind::COLON);
 	    std::unique_ptr<NodeBody> then_body = parse_body();
 	    if (now().data == "end") {
@@ -222,6 +210,14 @@ std::unique_ptr<NodeExpr> Parser::parse_atom() {
 		expect_kw("end");
 		return std::make_unique<NodeIf>(std::move(condition), std::move(then_body), std::move(else_body), if_start);
 	    }
+	} else if (now().data == "loop") {
+	    Span loop_start = now().span;
+	    advance();
+	    Exprptr times   = parse_expr();
+	    expect(TokenKind::COLON);
+	    auto    body    = parse_body();
+	    expect_kw("end");
+	    return std::make_unique<NodeLoop>(std::move(times), std::move(body), loop_start);
 	}
 	error_manager->add(Diagnostic(DiagnosticType::Error, now().span, "Invalid Expression", ""));
 	return std::make_unique<NodeNop>();

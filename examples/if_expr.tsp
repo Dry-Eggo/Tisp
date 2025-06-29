@@ -2,8 +2,8 @@
 let true = 1;
 let false = 0;
 
-if false:
-   println("Hello World");
+if true:
+   exec("ls -l");
 else:
-   println("Damn");
+   exec("which gcc");
 end

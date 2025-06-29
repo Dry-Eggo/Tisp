@@ -78,6 +78,14 @@ namespace Tisp {
 	    NodeIf(Exprptr cond, std::unique_ptr<NodeBody> tb, Span s)
 	    : condition(std::move(cond)), then_body(std::move(tb)), span(s), NodeExpr(s) {}
 	};
+
+	struct NodeLoop   : NodeExpr {
+	    Span                      span;
+	    Exprptr                   times;
+	    std::unique_ptr<NodeBody> body;
+	    NodeLoop(Exprptr t, std::unique_ptr<NodeBody> b, Span s)
+	    : times(std::move(t)), body(std::move(b)), span(s), NodeExpr(s) {}
+	};
 	
 	struct NodeFunction {
 	    Span                      span;
@@ -132,17 +140,17 @@ namespace Tisp {
 	    StmtKind kind;
 	    Span span;
 	    using StmtVariant =
-	    std::variant<std::unique_ptr<NodeAssignment>,
-            std::unique_ptr<NodeExprStmt>, std::unique_ptr<NodeFunction>,
-            std::unique_ptr<NodeBody>, std::unique_ptr<NodeCall>,
-            std::unique_ptr<NodeNop>>;
+	    std::variant<NodeAssignment*,
+            NodeExprStmt*, NodeFunction*,
+            NodeBody*, NodeCall*,
+            NodeNop*>;
 	    StmtVariant stmt;
-	    NodeStmt() : kind(StmtKind::Nop), stmt(std::make_unique<NodeNop>()) {}
+	    NodeStmt() : kind(StmtKind::Nop), stmt(new NodeNop()) {}
 	    NodeStmt(Span span, StmtKind kind, StmtVariant stmt)
 	    : kind(kind), span(span), stmt(std::move(stmt)) {}
 	    static Stmtptr make_nop(Span s = {}) {
 		return std::make_unique<NodeStmt>(s, StmtKind::Nop,
-                std::make_unique<NodeNop>());
+                new NodeNop());
 	    }
 	};
 

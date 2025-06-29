@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
   Tisp::Language::Parser parser = Tisp::Language::Parser(tokens, &error_manager);
   auto p = parser.parse();
   Tisp::Runtime::Vm vm = Tisp::Runtime::Vm(std::move(p), &error_manager);
+  printf("Running\n");
   vm.execute();
   error_manager.reportAll();
 }

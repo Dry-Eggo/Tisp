@@ -8,10 +8,11 @@
 using namespace Tisp::Language;
 
 namespace Tisp {
-    namespace Runtime {
+    namespace Runtime {	
 	struct Env {
 	    std::unordered_map<std::string, std::shared_ptr<Value::Value>> variables;
-	};	
+	};
+	
 	struct Vm {
 	    using NativeFn = std::function<Value::ValuePtr(Vm* vm, Value::Args args)>;
 	    ErrorManager*                              error_manager;
@@ -21,8 +22,8 @@ namespace Tisp {
 	    
 	    Vm(Language::Node program, ErrorManager* em);
 	    void execute();
-	    void execute_node(std::unique_ptr<NodeStmt> node);
-	    Value::ValuePtr generate_value(std::unique_ptr<NodeExpr> expr);
+	    void execute_node(NodeStmt* node);
+	    Value::ValuePtr generate_value(NodeExpr* expr);
 	    Value::ValuePtr handle_call(NodeCall *call);
 	    Value::Args to_values(std::vector<Exprptr> args);
 	};

@@ -65,7 +65,7 @@ namespace Tisp {
 		    }
 		    // TODO: add all keywords
 		    if (buf == "end" || buf == "func" || buf == "import" || buf == "if" ||
-		    buf == "let" || buf == "if" || buf == "elif" || buf == "else") {
+		    buf == "let" || buf == "if" || buf == "elif" || buf == "else" || buf == "loop" ) {
 			tokens.push_back(Token(TokenKind::KEYWORD, buf,
                         Span(filename.c_str(), line, sc, column - 1)));
 			continue;

@@ -50,12 +50,17 @@ namespace Tisp {
 		if (kind == ValueKind::Number) {
 		    return (std::get<int64_t>(data) > 0);
 		}
+		if (kind == ValueKind::Object) {
+		    return std::get<std::pair<const char*, ValuePtr>>(data).second->is_truthy();
+		}
 		return false;
 	    }
 	    
 	    bool is_falsy() {
 		if (kind == ValueKind::Number) {
 		    return (std::get<int64_t>(data) < 0);
+		} if (kind == ValueKind::Object) {
+		    return std::get<std::pair<const char*, ValuePtr>>(data).second->is_falsy();
 		}
 		return false;
 	    } 
